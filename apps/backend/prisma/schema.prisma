@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenancy: All models should belong to a Shop
+model Shop {
+  id        String   @id @default(uuid())
+  name      String
+  logo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users     User[]
+  products  Product[]
+  orders    Order[]
+  coupons   Coupon[]
+  partners  Partner[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  mobile    String
+  name      String?
+  openid    String?  // Wechat OpenID
+  balance   Decimal  @default(0)
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  coupons   UserCoupon[]
+  
+  @@unique([shopId, mobile])
+  @@index([shopId])
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id])
+  name          String
+  description   String?
+  images        String[] // JSONB array of image URLs
+  specs         Json     // JSONB for SKU specifications e.g. [{"name": "Capacity", "options": ["10L", "18L"]}]
+  skus          Json     // JSONB for SKU list e.g. [{"spec": "10L", "price": 10.0, "code": "sku1"}]
+  sales         Int      @default(0)
+  isStockInfinite Boolean @default(true) // Default to true as per analysis
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  status        String   // PENDING, PAID, DISPATCHED, DELIVERING, COMPLETED, CANCELLED
+  totalAmount   Decimal
+  payAmount     Decimal
+  items         Json     // JSONB snapshot of items
+  dispatchInfo  Json?    // Dispatcher info, lat/lng, etc.
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+model Coupon {
+  id              String   @id @default(uuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id])
+  name            String
+  type            String   // FULL_REDUCTION, DISCOUNT
+  value           Decimal
+  minSpend        Decimal  @default(0)
+  applicableScope Json?    // JSONB: { "productIds": ["p1", "p2"] } or "ALL"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  userCoupons     UserCoupon[]
+
+  @@index([shopId])
+}
+
+model UserCoupon {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  status    String   // UNUSED, USED, EXPIRED
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+}
+
+model Partner {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  name      String
+  phone     String
+  type      String   // SHAREHOLDER, STAFF
+  config    Json     // Commission rules
+  createdAt DateTime @default(now())
+
+  @@index([shopId])
+}
