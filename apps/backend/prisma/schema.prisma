@@ -12,14 +12,45 @@ model Shop {
   id        String   @id @default(uuid())
   name      String
   logo      String?
+  phone     String?    // 门店电话
+  address   String?    // 门店地址
+  latitude  Decimal?   // 纬度
+  longitude Decimal?   // 经度
+  isActive  Boolean  @default(true)  // 是否启用
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   users     User[]
+  admins    Admin[]  // 管理员账号
   products  Product[]
   orders    Order[]
   coupons   Coupon[]
   partners  Partner[]
+  categories Category[]
+  deliveryAreas DeliveryArea[]
+  waterTickets  WaterTicket[]
+  depositTypes  DepositType[]
+  dispatchers   Dispatcher[]
+  configs       SystemConfig[]
+}
+
+// 管理员账号
+model Admin {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  username  String   // 用户名
+  password  String   // 密码(加密存储)
+  name      String?  // 真实姓名
+  mobile    String?  // 手机号
+  role      String   @default("admin") // 角色: super_admin, admin, operator
+  isActive  Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([shopId, username])
+  @@index([shopId])
 }
 
 model User {
@@ -28,34 +59,73 @@ model User {
   shop      Shop     @relation(fields: [shopId], references: [id])
   mobile    String
   name      String?
+  password  String   @default("123456") // In production, remove default and make optional or required
   openid    String?  // Wechat OpenID
+  role      String   @default("user") // super_admin, admin, operator, user
   balance   Decimal  @default(0)
   points    Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders    Order[]
-  coupons   UserCoupon[]
+  orders         Order[]
+  coupons        UserCoupon[]
+  addresses      Address[]
+  waterTickets   UserWaterTicket[]
+  deposits       UserDeposit[]
+  balanceRecords BalanceRecord[]
+  pointsRecords  PointsRecord[]
   
   @@unique([shopId, mobile])
   @@index([shopId])
 }
 
+// 余额变动记录
+model BalanceRecord {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // RECHARGE(充值), CONSUME(消费), REFUND(退款), GIFT(赠送)
+  amount    Decimal  // 变动金额（正数为增加，负数为减少）
+  balance   Decimal  // 变动后余额
+  remark    String?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+}
+
+// 积分变动记录
+model PointsRecord {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // EARN(获取), CONSUME(消费), GIFT(赠送), SIGNIN(签到)
+  amount    Int      // 变动积分（正数为增加，负数为减少）
+  balance   Int      // 变动后积分
+  remark    String?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+}
+
 model Product {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   shopId        String
-  shop          Shop     @relation(fields: [shopId], references: [id])
+  shop          Shop      @relation(fields: [shopId], references: [id])
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
   name          String
   description   String?
-  images        String[] // JSONB array of image URLs
-  specs         Json     // JSONB for SKU specifications e.g. [{"name": "Capacity", "options": ["10L", "18L"]}]
-  skus          Json     // JSONB for SKU list e.g. [{"spec": "10L", "price": 10.0, "code": "sku1"}]
-  sales         Int      @default(0)
-  isStockInfinite Boolean @default(true) // Default to true as per analysis
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  images        String[]  // Array of image URLs
+  specs         Json      // JSONB for SKU specifications
+  skus          Json      // JSONB for SKU list
+  sales         Int       @default(0)
+  isStockInfinite Boolean @default(true)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([shopId])
+  @@index([categoryId])
 }
 
 model Order {
@@ -80,16 +150,44 @@ model Coupon {
   shopId          String
   shop            Shop     @relation(fields: [shopId], references: [id])
   name            String
-  type            String   // FULL_REDUCTION, DISCOUNT
-  value           Decimal
-  minSpend        Decimal  @default(0)
+  
+  // 优惠券分类: NORMAL(普通券), NEW_USER(新人券), MEMBER(会员券), INVITE(邀请券)
+  category        String   @default("NORMAL")
+  
+  // 优惠类型: FULL_REDUCTION(满减), DISCOUNT(折扣)
+  type            String   @default("FULL_REDUCTION")
+  value           Decimal  // 优惠金额或折扣率
+  minSpend        Decimal  @default(0) // 满减条件
+  
+  // 发放时间
+  issueStartAt    DateTime?
+  issueEndAt      DateTime?
+  
+  // 使用有效期
+  useStartAt      DateTime?
+  useEndAt        DateTime?
+  
+  // 配额
+  quota           Int      @default(0) // 0表示不限量
+  issuedCount     Int      @default(0) // 已发放数量
+  
+  // 是否可用积分兑换
+  pointsExchange  Boolean  @default(false)
+  pointsCost      Int      @default(0) // 兑换所需积分
+  
+  // 适用范围
   applicableScope Json?    // JSONB: { "productIds": ["p1", "p2"] } or "ALL"
+  
+  // 状态
+  isActive        Boolean  @default(true)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   userCoupons     UserCoupon[]
 
   @@index([shopId])
+  @@index([category])
 }
 
 model UserCoupon {
@@ -114,5 +212,193 @@ model Partner {
   config    Json     // Commission rules
   createdAt DateTime @default(now())
 
+  @@index([shopId])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id])
+  name      String
+  sort      Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+  
+  @@index([shopId])
+}
+
+model DeliveryArea {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  name      String
+  polygon   Json     // GeoJSON polygon or lat/lng array
+  fee       Decimal  @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([shopId])
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String   // 收货人姓名
+  phone     String   // 收货人电话
+  province  String   // 省
+  city      String   // 市
+  district  String   // 区
+  detail    String   // 详细地址
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ==================== 水票系统 ====================
+
+// 水票类型（商户发行）
+model WaterTicket {
+  id            String   @id @default(uuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id])
+  name          String   // 水票名称，如"18.9L桶装水票"
+  productId     String?  // 关联商品（可选）
+  quantity      Int      // 每张水票可兑换数量
+  price         Decimal  // 水票售价
+  originalPrice Decimal? // 原价（用于展示优惠）
+  validDays     Int      @default(365) // 有效期（天）
+  totalIssued   Int      @default(0)   // 发行总量
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  userTickets   UserWaterTicket[]
+  
+  @@index([shopId])
+}
+
+// 用户持有的水票
+model UserWaterTicket {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  ticketId     String
+  ticket       WaterTicket @relation(fields: [ticketId], references: [id])
+  remaining    Int      // 剩余可兑换数量
+  expireAt     DateTime // 过期时间
+  status       String   @default("VALID") // VALID, USED, EXPIRED
+  createdAt    DateTime @default(now())
+  
+  usageLogs    TicketUsageLog[]
+  
+  @@index([userId])
+  @@index([ticketId])
+}
+
+// 水票使用记录
+model TicketUsageLog {
+  id              String   @id @default(uuid())
+  userTicketId    String
+  userTicket      UserWaterTicket @relation(fields: [userTicketId], references: [id])
+  orderId         String?  // 关联订单
+  quantity        Int      // 本次使用数量
+  createdAt       DateTime @default(now())
+  
+  @@index([userTicketId])
+}
+
+// ==================== 押金系统 ====================
+
+// 押金类型
+model DepositType {
+  id          String   @id @default(uuid())
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  name        String   // 押金名称，如"桶押金"、"饮水机押金"
+  amount      Decimal  // 押金金额
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  deposits    UserDeposit[]
+  
+  @@index([shopId])
+}
+
+// 用户押金记录
+model UserDeposit {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  depositTypeId String
+  depositType   DepositType @relation(fields: [depositTypeId], references: [id])
+  quantity      Int      @default(1) // 数量（如几个桶）
+  totalAmount   Decimal  // 押金总额
+  status        String   @default("HOLDING") // HOLDING(持有中), RETURNED(已退还), FORFEITED(已没收)
+  returnedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ==================== 配送员/派单系统 ====================
+
+// 配送员
+model Dispatcher {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  name      String
+  phone     String
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  areaIds   String[] // 负责的配送区域ID列表
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  dispatches OrderDispatch[]
+  
+  @@index([shopId])
+  @@unique([shopId, phone])
+}
+
+// 订单派单记录
+model OrderDispatch {
+  id           String   @id @default(uuid())
+  orderId      String   @unique
+  dispatcherId String
+  dispatcher   Dispatcher @relation(fields: [dispatcherId], references: [id])
+  status       String   @default("ASSIGNED") // ASSIGNED, ACCEPTED, DELIVERING, COMPLETED, CANCELLED
+  assignedAt   DateTime @default(now())
+  acceptedAt   DateTime?
+  completedAt  DateTime?
+  note         String?
+  
+  @@index([dispatcherId])
+  @@index([orderId])
+}
+
+// ==================== 系统配置 ====================
+
+// 系统配置（键值对存储）
+model SystemConfig {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  category  String   // 配置分类: WECHAT_MP, WECHAT_OA, PAYMENT, NOTIFICATION
+  key       String   // 配置键
+  value     String   // 配置值（敏感信息加密存储）
+  label     String?  // 显示名称
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([shopId, category, key])
   @@index([shopId])
 }

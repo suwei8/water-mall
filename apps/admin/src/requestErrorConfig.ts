@@ -19,6 +19,17 @@ interface ResponseStructure {
   showType?: ErrorShowType;
 }
 
+// 全局 401 处理函数
+const handle401 = () => {
+  localStorage.removeItem('token');
+  // 避免循环跳转
+  if (window.location.pathname !== '/user/login') {
+    message.error('登录已过期，请重新登录');
+    // 使用立即重定向
+    window.location.href = '/user/login';
+  }
+};
+
 /**
  * @name 错误处理
  * pro 自带的错误处理， 可以在这里做自己的改动
@@ -72,15 +83,27 @@ export const errorConfig: RequestConfig = {
       } else if (error.response) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-        message.error(`Response status:${error.response.status}`);
+        const status = error.response.status;
+
+        // 401 未授权 - token 过期或无效，跳转到登录页
+        if (status === 401) {
+          handle401();
+          return;
+        }
+
+        // 403 无权限
+        if (status === 403) {
+          message.error('没有权限访问该资源');
+          return;
+        }
+
+        message.error(`请求失败: ${status}`);
       } else if (error.request) {
         // 请求已经成功发起，但没有收到响应
-        // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
-        // 而在node.js中是 http.ClientRequest 的实例
-        message.error('None response! Please retry.');
+        message.error('服务器无响应，请稍后重试');
       } else {
         // 发送请求时出了点问题
-        message.error('Request error, please retry.');
+        message.error('请求出错，请重试');
       }
     },
   },
@@ -89,14 +112,20 @@ export const errorConfig: RequestConfig = {
   requestInterceptors: [
     (config: RequestOptions) => {
       // 拦截请求配置，进行个性化处理。
-      const url = config?.url?.concat('?token=123');
-      return { ...config, url };
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+      return config;
     },
   ],
 
-  // 响应拦截器
+  // 响应拦截器 - 处理成功响应
   responseInterceptors: [
-    (response) => {
+    (response: any) => {
       // 拦截响应数据，进行个性化处理
       const { data } = response as unknown as ResponseStructure;
 

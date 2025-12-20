@@ -49,4 +49,12 @@ export default {
   'menu.editor.flow': 'Flow Editor',
   'menu.editor.mind': 'Mind Editor',
   'menu.editor.koni': 'Koni Editor',
+  // Water Mall menus
+  'menu.product': 'Products',
+  'menu.product.list': 'Product List',
+  'menu.product.category': 'Categories',
+  'menu.delivery': 'Delivery',
+  'menu.delivery.area': 'Delivery Areas',
+  'menu.order': 'Orders',
+  'menu.order.list': 'Order List',
 };

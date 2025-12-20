@@ -1,0 +1,94 @@
+# Dependencies
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+.next/
+out/
+.nuxt/
+.output/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Antigravity/Agent artifacts
+.gemini/
+
+# Runtime files
+*.pid
+nohup.out
+
+# OS files
+Thumbs.db
+.DS_Store
+*.pid
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Cache
+.cache/
+.temp/
+.tmp/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Prisma
+apps/backend/prisma/migrations/**/migration.sql
+# Keep the migrations folder structure but ignore actual migration files if needed
+
+# UmiJS / Ant Design Pro
+.umi/
+.umi-production/
+.umi-test/
+
+# Production
+*.tgz
+
+# Misc
+.turbo/
+.vercel/
+.terraform/

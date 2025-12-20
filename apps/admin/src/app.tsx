@@ -35,24 +35,48 @@ export async function getInitialState(): Promise<{
       });
       return msg.data;
     } catch (_error) {
-      history.push(loginPath);
+      // 认证失败时清除 token 并返回 undefined
+      localStorage.removeItem('token');
+      return undefined;
     }
-    return undefined;
   };
-  // 如果不是登录页面，执行
+
   const { location } = history;
-  if (
-    ![loginPath, '/user/register', '/user/register-result'].includes(
-      location.pathname,
-    )
-  ) {
+  const isLoginPage = [loginPath, '/user/register', '/user/register-result'].includes(
+    location.pathname,
+  );
+
+  // 如果不是登录页面
+  if (!isLoginPage) {
+    // 先检查本地是否有 token，没有则直接跳转登录
+    const token = localStorage.getItem('token');
+    if (!token) {
+      history.push(loginPath);
+      return {
+        fetchUserInfo,
+        settings: defaultSettings as Partial<LayoutSettings>,
+      };
+    }
+
+    // 有 token 则验证用户信息
     const currentUser = await fetchUserInfo();
+
+    // 如果获取用户信息失败（token 无效），重定向到登录页
+    if (!currentUser) {
+      history.push(loginPath);
+      return {
+        fetchUserInfo,
+        settings: defaultSettings as Partial<LayoutSettings>,
+      };
+    }
+
     return {
       fetchUserInfo,
       currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
     };
   }
+
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
@@ -109,11 +133,11 @@ export const layout: RunTimeLayoutConfig = ({
     ],
     links: isDevOrTest
       ? [
-          <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
-            <LinkOutlined />
-            <span>OpenAPI 文档</span>
-          </Link>,
-        ]
+        <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
+          <LinkOutlined />
+          <span>OpenAPI 文档</span>
+        </Link>,
+      ]
       : [],
     menuHeaderRender: undefined,
     // 自定义 403 页面
@@ -150,6 +174,9 @@ export const layout: RunTimeLayoutConfig = ({
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request: RequestConfig = {
-  baseURL: isDev ? '' : 'https://proapi.azurewebsites.net',
+  // baseURL: isDev ? '' : 'https://proapi.azurewebsites.net',
+  // Force relative path so proxy works in all environments for now, or at least in Dev.
+  // Ideally in prod we have Nginx handling /api too.
+  baseURL: '',
   ...errorConfig,
 };

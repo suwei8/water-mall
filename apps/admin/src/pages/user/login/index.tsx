@@ -113,6 +113,7 @@ const LoginMessage: React.FC<{
 const Login: React.FC = () => {
   const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
+  const [debugLog, setDebugLog] = useState<any>(null); // DEBUG STATE
   const { initialState, setInitialState } = useModel('@@initialState');
   const { styles } = useStyles();
   const { message } = App.useApp();
@@ -132,6 +133,7 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (values: API.LoginParams) => {
     try {
+      setDebugLog(null);
       // 登录
       const msg = await login({ ...values, type });
       if (msg.status === 'ok') {
@@ -139,6 +141,10 @@ const Login: React.FC = () => {
           id: 'pages.login.success',
           defaultMessage: '登录成功！',
         });
+        // Store Token
+        if (msg.access_token) {
+          localStorage.setItem('token', msg.access_token);
+        }
         message.success(defaultLoginSuccessMessage);
         await fetchUserInfo();
         const urlParams = new URL(window.location.href).searchParams;
@@ -146,14 +152,21 @@ const Login: React.FC = () => {
         return;
       }
       console.log(msg);
+      setDebugLog({ msg, type: 'failure_status' });
       // 如果失败去设置用户错误信息
       setUserLoginState(msg);
-    } catch (error) {
+    } catch (error: any) {
       const defaultLoginFailureMessage = intl.formatMessage({
         id: 'pages.login.failure',
         defaultMessage: '登录失败，请重试！',
       });
       console.log(error);
+      setDebugLog({
+        error: error.message,
+        stack: error.stack,
+        response: error.response,
+        config: error.config
+      });
       message.error(defaultLoginFailureMessage);
     }
   };
@@ -390,6 +403,13 @@ const Login: React.FC = () => {
         </LoginForm>
       </div>
       <Footer />
+      {/* DEBUG UI */}
+      {debugLog && (
+        <div style={{ padding: 20, backgroundColor: '#ffe6e6', color: 'red', position: ('absolute'), bottom: 0, zIndex: 9999, width: '100%', overflow: 'scroll', maxHeight: 300 }}>
+          <h3>Debug Info:</h3>
+          <pre>{JSON.stringify(debugLog, null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
 };

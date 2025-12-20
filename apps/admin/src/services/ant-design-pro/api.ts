@@ -2,12 +2,12 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** 获取当前的用户 GET /api/currentUser */
+/** 获取当前的用户 GET /api/auth/currentUser */
 export async function currentUser(options?: { [key: string]: any }) {
   return request<{
     data: API.CurrentUser;
-  }>('/api/currentUser', {
-    method: 'GET',
+  }>('/api/auth/currentUser', {
+    method: 'POST',
     ...(options || {}),
   });
 }
@@ -20,9 +20,9 @@ export async function outLogin(options?: { [key: string]: any }) {
   });
 }
 
-/** 登录接口 POST /api/login/account */
+/** 登录接口 POST /api/auth/login */
 export async function login(body: API.LoginParams, options?: { [key: string]: any }) {
-  return request<API.LoginResult>('/api/login/account', {
+  return request<API.LoginResult>('/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -90,5 +90,26 @@ export async function removeRule(options?: { [key: string]: any }) {
       method: 'delete',
       ...(options || {}),
     },
+  });
+}
+/** 获取角色权限常量 GET /api/roles/constants */
+export async function getRoleConstants() {
+  return request<any[]>('/api/roles/constants', {
+    method: 'GET',
+  });
+}
+
+/** 获取角色权限配置 GET /api/roles/permissions */
+export async function getRolePermissions() {
+  return request<Record<string, string[]>>('/api/roles/permissions', {
+    method: 'GET',
+  });
+}
+
+/** 更新角色权限配置 PUT /api/roles/permissions */
+export async function updateRolePermissions(data: Record<string, string[]>) {
+  return request<{ success: boolean }>('/api/roles/permissions', {
+    method: 'PUT',
+    data,
   });
 }

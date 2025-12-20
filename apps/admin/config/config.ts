@@ -165,9 +165,7 @@ export default defineConfig({
       projectName: 'swagger',
     },
   ],
-  mock: {
-    include: ['mock/**/*', 'src/pages/**/_mock.ts'],
-  },
+  mock: false,
   utoopack: {},
   requestRecord: {},
   exportStatic: {},

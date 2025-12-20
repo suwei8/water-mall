@@ -23,6 +23,10 @@ export default [
     ],
   },
   {
+    path: '/',
+    redirect: '/welcome',
+  },
+  {
     path: '/welcome',
     name: 'welcome',
     icon: 'smile',
@@ -43,6 +47,98 @@ export default [
         name: 'sub-page',
         component: './Admin',
       },
+    ],
+  },
+  {
+    path: '/product',
+    name: 'product',
+    icon: 'shopping',
+    access: 'canProductRead',
+    routes: [
+      { path: '/product', redirect: '/product/list' },
+      { path: '/product/list', name: 'list', component: './product/list' },
+      { path: '/product/category', name: 'category', component: './product/category' },
+    ],
+  },
+  {
+    path: '/delivery',
+    name: 'delivery',
+    icon: 'car',
+    routes: [
+      { path: '/delivery', redirect: '/delivery/area' },
+      { path: '/delivery/area', name: 'area', component: './delivery/area' },
+    ],
+  },
+  {
+    path: '/order',
+    name: 'order',
+    icon: 'fileText',
+    access: 'canOrderRead',
+    routes: [
+      { path: '/order', redirect: '/order/list' },
+      { path: '/order/list', name: 'list', component: './order/list' },
+    ],
+  },
+  {
+    path: '/customer',
+    name: 'customer',
+    icon: 'team',
+    access: 'canUserRead',
+    routes: [
+      { path: '/customer', redirect: '/customer/list' },
+      { path: '/customer/list', name: 'list', component: './customer/list' },
+    ],
+  },
+  {
+    path: '/coupon',
+    name: 'coupon',
+    icon: 'gift',
+    routes: [
+      { path: '/coupon', redirect: '/coupon/list' },
+      { path: '/coupon/list', name: 'list', component: './coupon/list' },
+    ],
+  },
+  {
+    path: '/water-ticket',
+    name: 'waterTicket',
+    icon: 'creditCard',
+    routes: [
+      { path: '/water-ticket', redirect: '/water-ticket/list' },
+      { path: '/water-ticket/list', name: 'list', component: './water-ticket/list' },
+    ],
+  },
+  {
+    path: '/deposit',
+    name: 'deposit',
+    icon: 'wallet',
+    routes: [
+      { path: '/deposit', redirect: '/deposit/list' },
+      { path: '/deposit/list', name: 'list', component: './deposit/list' },
+    ],
+  },
+  {
+    path: '/dispatcher',
+    name: 'dispatcher',
+    icon: 'car',
+    routes: [
+      { path: '/dispatcher', redirect: '/dispatcher/list' },
+      { path: '/dispatcher/list', name: 'list', component: './dispatcher/list' },
+      { path: '/dispatcher/dispatch', name: 'dispatch', component: './dispatcher/dispatch' },
+    ],
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    icon: 'setting',
+    routes: [
+      { path: '/settings', redirect: '/settings/shops' },
+      { path: '/settings/shops', name: 'shops', component: './settings/shops', access: 'canSettings' },
+      { path: '/settings/system', name: 'system', component: './settings/system', access: 'canSettings' },
+      { path: '/settings/account', name: 'account', component: './settings/account', access: 'canAdminRead' },
+      { path: '/settings/roles', name: 'roles', component: './settings/roles', access: 'canAdminRead' },
+      { path: '/settings/shop', name: 'shop', component: './settings/shop', access: 'canSettings' },
+      { path: '/settings/config', name: 'config', component: './settings/config', access: 'canSettings' },
+      { path: '/settings/points', name: 'points', component: './settings/points', access: 'canSettings' },
     ],
   },
   {

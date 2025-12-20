@@ -1,163 +1,209 @@
-import { PageContainer } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
-import { Card, theme } from 'antd';
-import React from 'react';
+import { PageContainer, StatisticCard } from '@ant-design/pro-components';
+import { Card, Row, Col, theme, Spin } from 'antd';
+import { ShoppingOutlined, TeamOutlined, FileTextOutlined, DollarOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { request } from '@umijs/max';
 
-/**
- * 每个单独的卡片，为了复用样式抽成了组件
- * @param param0
- * @returns
- */
-const InfoCard: React.FC<{
+interface StatsOverview {
+  totalOrders: number;
+  todayOrders: number;
+  totalSales: string;
+  todaySales: string;
+  totalUsers: number;
+  totalProducts: number;
+}
+
+const StatCard: React.FC<{
   title: string;
-  index: number;
-  desc: string;
-  href: string;
-}> = ({ title, href, index, desc }) => {
-  const { useToken } = theme;
-
-  const { token } = useToken();
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+}> = ({ title, value, icon, color }) => {
+  const { token } = theme.useToken();
 
   return (
-    <div
-      style={{
-        backgroundColor: token.colorBgContainer,
-        boxShadow: token.boxShadow,
-        borderRadius: '8px',
-        fontSize: '14px',
-        color: token.colorTextSecondary,
-        lineHeight: '22px',
-        padding: '16px 19px',
-        minWidth: '220px',
-        flex: 1,
-      }}
-    >
-      <div
-        style={{
+    <Card style={{ height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ color: token.colorTextSecondary, fontSize: 14 }}>{title}</div>
+          <div style={{ fontSize: 28, fontWeight: 600, marginTop: 8, color }}>{value}</div>
+        </div>
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: 8,
+          background: `${color}15`,
           display: 'flex',
-          gap: '4px',
           alignItems: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            lineHeight: '22px',
-            backgroundSize: '100%',
-            textAlign: 'center',
-            padding: '8px 16px 16px 12px',
-            color: '#FFF',
-            fontWeight: 'bold',
-            backgroundImage:
-              "url('https://gw.alipayobjects.com/zos/bmw-prod/daaf8d50-8e6d-4251-905d-676a24ddfa12.svg')",
-          }}
-        >
-          {index}
-        </div>
-        <div
-          style={{
-            fontSize: '16px',
-            color: token.colorText,
-            paddingBottom: 8,
-          }}
-        >
-          {title}
+          justifyContent: 'center',
+          fontSize: 28,
+          color
+        }}>
+          {icon}
         </div>
       </div>
-      <div
-        style={{
-          fontSize: '14px',
-          color: token.colorTextSecondary,
-          textAlign: 'justify',
-          lineHeight: '22px',
-          marginBottom: 8,
-        }}
-      >
-        {desc}
-      </div>
-      <a href={href} target="_blank" rel="noreferrer">
-        了解更多 {'>'}
-      </a>
-    </div>
+    </Card>
   );
 };
 
 const Welcome: React.FC = () => {
   const { token } = theme.useToken();
-  const { initialState } = useModel('@@initialState');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<StatsOverview | null>(null);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const res = await request<StatsOverview>('/api/stats/overview');
+      setStats(res);
+    } catch (e) {
+      console.error('Failed to load stats', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div style={{ textAlign: 'center', padding: 100 }}>
+          <Spin size="large" />
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
-      <Card
-        style={{
-          borderRadius: 8,
-        }}
-        styles={{
-          body: {
-            backgroundImage:
-              initialState?.settings?.navTheme === 'realDark'
-                ? 'background-image: linear-gradient(75deg, #1A1B1F 0%, #191C1F 100%)'
-                : 'background-image: linear-gradient(75deg, #FBFDFF 0%, #F5F7FF 100%)',
-          },
-        }}
-      >
-        <div
-          style={{
-            backgroundPosition: '100% -30%',
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: '274px auto',
-            backgroundImage:
-              "url('https://gw.alipayobjects.com/mdn/rms_a9745b/afts/img/A*BuFmQqsB2iAAAAAAAAAAAAAAARQnAQ')",
-          }}
-        >
-          <div
-            style={{
-              fontSize: '20px',
-              color: token.colorTextHeading,
-            }}
-          >
-            欢迎使用 Ant Design Pro
-          </div>
-          <p
-            style={{
-              fontSize: '14px',
-              color: token.colorTextSecondary,
-              lineHeight: '22px',
-              marginTop: 16,
-              marginBottom: 32,
-              width: '65%',
-            }}
-          >
-            Ant Design Pro 是一个整合了 umi，Ant Design 和 ProComponents
-            的脚手架方案。致力于在设计规范和基础组件的基础上，继续向上构建，提炼出典型模板/业务组件/配套设计资源，进一步提升企业级中后台产品设计研发过程中的『用户』和『设计者』的体验。
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 16,
-            }}
-          >
-            <InfoCard
-              index={1}
-              href="https://umijs.org/docs/introduce/introduce"
-              title="了解 umi"
-              desc="umi 是一个可扩展的企业级前端应用框架,umi 以路由为基础的，同时支持配置式路由和约定式路由，保证路由的功能完备，并以此进行功能扩展。"
-            />
-            <InfoCard
-              index={2}
-              title="了解 ant design"
-              href="https://ant.design"
-              desc="antd 是基于 Ant Design 设计体系的 React UI 组件库，主要用于研发企业级中后台产品。"
-            />
-            <InfoCard
-              index={3}
-              title="了解 Pro Components"
-              href="https://procomponents.ant.design"
-              desc="ProComponents 是一个基于 Ant Design 做了更高抽象的模板组件，以 一个组件就是一个页面为开发理念，为中后台开发带来更好的体验。"
-            />
-          </div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 24, fontWeight: 600, color: token.colorTextHeading }}>
+          欢迎回来 👋
         </div>
+        <div style={{ color: token.colorTextSecondary, marginTop: 8 }}>
+          这是您的店铺数据概览
+        </div>
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="今日订单"
+            value={stats?.todayOrders || 0}
+            icon={<FileTextOutlined />}
+            color="#1890ff"
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="今日销售额"
+            value={`¥${stats?.todaySales || '0.00'}`}
+            icon={<DollarOutlined />}
+            color="#52c41a"
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="总订单数"
+            value={stats?.totalOrders || 0}
+            icon={<ShoppingOutlined />}
+            color="#722ed1"
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="客户数"
+            value={stats?.totalUsers || 0}
+            icon={<TeamOutlined />}
+            color="#fa8c16"
+          />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card title="累计销售额">
+            <StatisticCard.Statistic
+              title=""
+              value={stats?.totalSales || '0.00'}
+              prefix="¥"
+              valueStyle={{ fontSize: 36, color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="商品数量">
+            <StatisticCard.Statistic
+              title=""
+              value={stats?.totalProducts || 0}
+              suffix="个"
+              valueStyle={{ fontSize: 36, color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card style={{ marginTop: 24 }} title="快捷入口">
+        <Row gutter={[16, 16]}>
+          <Col span={6}>
+            <a href="/order/list" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: 20,
+              borderRadius: 8,
+              background: '#f5f5f5',
+              textDecoration: 'none',
+            }}>
+              <FileTextOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+              <span style={{ marginTop: 8, color: token.colorText }}>订单管理</span>
+            </a>
+          </Col>
+          <Col span={6}>
+            <a href="/product/list" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: 20,
+              borderRadius: 8,
+              background: '#f5f5f5',
+              textDecoration: 'none',
+            }}>
+              <ShoppingOutlined style={{ fontSize: 32, color: '#52c41a' }} />
+              <span style={{ marginTop: 8, color: token.colorText }}>商品管理</span>
+            </a>
+          </Col>
+          <Col span={6}>
+            <a href="/customer/list" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: 20,
+              borderRadius: 8,
+              background: '#f5f5f5',
+              textDecoration: 'none',
+            }}>
+              <TeamOutlined style={{ fontSize: 32, color: '#fa8c16' }} />
+              <span style={{ marginTop: 8, color: token.colorText }}>客户管理</span>
+            </a>
+          </Col>
+          <Col span={6}>
+            <a href="/coupon/list" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: 20,
+              borderRadius: 8,
+              background: '#f5f5f5',
+              textDecoration: 'none',
+            }}>
+              <DollarOutlined style={{ fontSize: 32, color: '#722ed1' }} />
+              <span style={{ marginTop: 8, color: token.colorText }}>营销管理</span>
+            </a>
+          </Col>
+        </Row>
       </Card>
     </PageContainer>
   );
