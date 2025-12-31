@@ -1,58 +1,91 @@
 <template>
   <view class="container">
-    <!-- 搜索栏 -->
-    <view class="search-bar">
-      <view class="search-input">
-        <text class="search-icon">🔍</text>
-        <text class="search-placeholder">搜索商品</text>
+    <!-- Header: Location & Search -->
+    <view class="header-section">
+      <view class="location-bar">
+        <view class="location-info">
+          <text class="location-icon">📍</text>
+          <text class="location-text">深圳市南山区科技园...</text>
+          <text class="arrow-icon">></text>
+        </view>
+        <view class="header-right">
+           <text class="msg-icon">🔔</text>
+        </view>
+      </view>
+      <!-- One Click Order Card (Hero) -->
+      <view class="hero-card">
+        <view class="hero-content">
+          <view class="last-order-info">
+             <view class="order-tag">上次购买</view>
+             <text class="order-title">农夫山泉 19L 桶装水</text>
+             <text class="order-desc">已安全服务 30 天</text>
+          </view>
+          <view class="quick-btn" @click="quickOrder">
+             <text>一键订水</text>
+          </view>
+        </view>
+         <image class="hero-bg" src="/static/water-bg.png" mode="aspectFill" />
       </view>
     </view>
 
-    <!-- 分类入口 -->
-    <scroll-view scroll-x class="category-scroll" v-if="categories.length">
-      <view class="category-list">
+    <!-- Status Cards -->
+    <view class="status-grid">
+      <view class="status-card" @click="goToTickets">
+        <text class="status-value">12</text>
+        <text class="status-label">剩余水票</text>
+        <text class="status-action">去兑换 ></text>
+      </view>
+      <view class="status-card" @click="goToBuckets">
+        <text class="status-value">2</text>
+        <text class="status-label">待还空桶</text>
+        <text class="status-action">预约回收 ></text>
+      </view>
+       <view class="status-card" @click="goToDispatch">
+        <text class="status-icon">🚚</text>
+        <text class="status-label">配送中</text>
+        <text class="status-desc">预计15分钟送达</text>
+      </view>
+    </view>
+
+    <!-- Main Content Area -->
+    <view class="main-content">
+      <view class="section-header">
+        <text class="section-title">热销好水</text>
+        <text class="section-more">全部 ></text>
+      </view>
+
+      <view class="water-list" v-if="products.length">
         <view 
-          v-for="cat in categories" 
-          :key="cat.id" 
-          class="category-item"
-          :class="{ active: currentCategory === cat.id }"
-          @click="selectCategory(cat.id)"
+          v-for="product in products" 
+          :key="product.id" 
+          class="water-item"
         >
-          {{ cat.name }}
-        </view>
-      </view>
-    </scroll-view>
-
-    <!-- 商品列表 -->
-    <view class="product-list" v-if="products.length">
-      <view 
-        v-for="product in products" 
-        :key="product.id" 
-        class="product-card"
-        @click="goToDetail(product.id)"
-      >
-        <image class="product-image" :src="product.image" mode="aspectFill" />
-        <view class="product-info">
-          <text class="product-name">{{ product.name }}</text>
-          <view class="product-bottom">
-            <text class="product-price">¥{{ product.price }}</text>
-            <text class="product-sales">已售{{ product.sales }}</text>
-          </view>
-          <view class="add-cart-btn" @click.stop="quickAddCart(product)">
-            <text>+</text>
+          <image class="water-img" :src="product.image" mode="aspectFill" />
+          <view class="water-info">
+            <text class="water-name">{{ product.name }}</text>
+            <text class="water-desc">深层地下水 | 19L</text>
+            <view class="water-tags">
+               <text class="tag">支持水票</text>
+               <text class="tag">免押金</text>
+            </view>
+            <view class="water-bottom">
+              <view class="price-box">
+                <text class="price-symbol">¥</text>
+                <text class="price-num">{{ product.price }}</text>
+                <text class="ticket-price"> / 1张水票</text>
+              </view>
+              <view class="add-btn" @click.stop="quickAddCart(product)">
+                <text>+</text>
+              </view>
+            </view>
           </view>
         </view>
       </view>
-    </view>
-
-    <!-- 空状态 -->
-    <view class="empty" v-else-if="!loading">
-      <text>暂无商品</text>
-    </view>
-
-    <!-- 加载中 -->
-    <view class="loading" v-if="loading">
-      <text>加载中...</text>
+      
+       <!-- Loading/Empty -->
+       <view class="loading" v-if="loading">
+        <text>加载中...</text>
+      </view>
     </view>
   </view>
 </template>
@@ -62,70 +95,47 @@ import { ref, onMounted } from 'vue';
 import { shopApi } from '@/utils/request';
 import { useCartStore } from '@/store';
 
-interface Category {
-  id: string;
-  name: string;
-}
-
 interface Product {
   id: string;
   name: string;
   image: string;
   price: number;
   sales: number;
-  categoryId?: string;
 }
 
 const cartStore = useCartStore();
-
 const loading = ref(true);
-const categories = ref<Category[]>([]);
 const products = ref<Product[]>([]);
-const currentCategory = ref<string>('');
 
-// 加载分类
-const loadCategories = async () => {
-  try {
-    const res = await shopApi.getCategories();
-    categories.value = res;
-    // 添加"全部"选项
-    categories.value.unshift({ id: '', name: '全部' });
-  } catch (e) {
-    console.error('Failed to load categories', e);
-  }
-};
+// Mock Data Load (Replace with API)
+const loadData = async () => {
+    loading.value = true;
+    try {
+        const res = await shopApi.getProducts({ size: 10 });
+        products.value = res.list || [];
+    } catch (e) {
+        console.error('Failed to load', e);
+    } finally {
+        loading.value = false;
+    }
+}
 
-// 加载商品
-const loadProducts = async (categoryId?: string) => {
-  loading.value = true;
-  try {
-    const res = await shopApi.getProducts({ 
-      categoryId: categoryId || undefined,
-      size: 50 
-    });
-    products.value = res.list || [];
-  } catch (e) {
-    console.error('Failed to load products', e);
-    products.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
+const quickOrder = () => {
+    uni.showToast({ title: '正在为您下单...', icon: 'none' });
+}
 
-// 选择分类
-const selectCategory = (categoryId: string) => {
-  currentCategory.value = categoryId;
-  loadProducts(categoryId);
-};
+const goToTickets = () => {
+    // Navigate to ticket page
+}
 
-// 跳转详情
-const goToDetail = (productId: string) => {
-  uni.navigateTo({
-    url: `/pages/product/detail?id=${productId}`
-  });
-};
+const goToBuckets = () => {
+    // Navigate to bucket page
+}
 
-// 快速加购（默认第一个 SKU）
+const goToDispatch = () => {
+    // Navigate to order page
+}
+
 const quickAddCart = (product: Product) => {
   cartStore.addItem({
     productId: product.id,
@@ -136,148 +146,241 @@ const quickAddCart = (product: Product) => {
     price: product.price,
     quantity: 1,
   });
-  
-  uni.showToast({
-    title: '已加入购物车',
-    icon: 'success',
-  });
+  uni.showToast({ title: '已加入购物车', icon: 'success' });
 };
 
 onMounted(() => {
-  loadCategories();
-  loadProducts();
+    loadData();
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .container {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #F7F8FA;
 }
 
-.search-bar {
-  padding: 20rpx 30rpx;
-  background-color: #fff;
-}
-
-.search-input {
-  display: flex;
-  align-items: center;
-  background-color: #f5f5f5;
-  border-radius: 40rpx;
-  padding: 16rpx 30rpx;
-}
-
-.search-icon {
-  margin-right: 16rpx;
-}
-
-.search-placeholder {
-  color: #999;
-  font-size: 28rpx;
-}
-
-.category-scroll {
-  background-color: #fff;
-  white-space: nowrap;
-  padding: 20rpx 0;
-}
-
-.category-list {
-  display: inline-flex;
-  padding: 0 20rpx;
-}
-
-.category-item {
-  padding: 12rpx 30rpx;
-  margin-right: 20rpx;
-  font-size: 28rpx;
-  color: #666;
-  border-radius: 30rpx;
-  background-color: #f5f5f5;
-}
-
-.category-item.active {
+.header-section {
+  background: linear-gradient(180deg, $uni-color-primary 0%, #F7F8FA 100%);
+  padding: 44px 20px 20px;
   color: #fff;
-  background-color: #1890ff;
 }
 
-.product-list {
+.location-bar {
   display: flex;
-  flex-wrap: wrap;
-  padding: 20rpx;
-  gap: 20rpx;
-}
-
-.product-card {
-  width: calc(50% - 10rpx);
-  background-color: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
-}
-
-.product-image {
-  width: 100%;
-  height: 300rpx;
-}
-
-.product-info {
-  padding: 20rpx;
-  position: relative;
-}
-
-.product-name {
-  font-size: 28rpx;
-  color: #333;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  height: 80rpx;
-}
-
-.product-bottom {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-top: 16rpx;
-}
-
-.product-price {
-  font-size: 32rpx;
-  color: #ff4d4f;
-  font-weight: bold;
-}
-
-.product-sales {
-  font-size: 24rpx;
-  color: #999;
-}
-
-.add-cart-btn {
-  position: absolute;
-  right: 20rpx;
-  bottom: 20rpx;
-  width: 50rpx;
-  height: 50rpx;
-  background-color: #1890ff;
-  border-radius: 50%;
-  display: flex;
   align-items: center;
-  justify-content: center;
+  margin-bottom: 20px;
+  
+  .location-info {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 500;
+    
+    .location-icon { margin-right: 6px; }
+    .arrow-icon { margin-left: 6px; color: rgba(255,255,255,0.8); }
+  }
 }
 
-.add-cart-btn text {
-  color: #fff;
-  font-size: 36rpx;
-  font-weight: bold;
-}
-
-.empty, .loading {
+.hero-card {
+  background: #fff;
+  border-radius: $uni-radius-card;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 160, 233, 0.1);
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 100rpx;
-  color: #999;
+  
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+  }
+  
+  .order-tag {
+    display: inline-block;
+    background: rgba(0, 160, 233, 0.1);
+    color: $uni-color-primary;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .order-title {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  .order-desc {
+    font-size: 12px;
+    color: #999;
+    display: block;
+    margin-bottom: 16px;
+  }
+  
+  .quick-btn {
+    background: linear-gradient(90deg, #00C6FF 0%, $uni-color-primary 100%);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 20px;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0, 160, 233, 0.3);
+  }
+
+  .hero-bg {
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 120px;
+    height: 120px;
+    opacity: 0.1;
+  }
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 0 20px;
+  margin-top: -10px; /* Overlap slightly if needed, or just standard spacing */
+}
+
+.status-card {
+  background: #fff;
+  border-radius: $uni-radius-card;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  
+  .status-value {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  .status-icon {
+    display: block;
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  .status-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  .status-action, .status-desc {
+    display: block;
+    font-size: 10px;
+    color: $uni-color-primary;
+  }
+  .status-desc { color: $uni-color-warning; }
+}
+
+.main-content {
+  padding: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  .section-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+  }
+  .section-more {
+    font-size: 12px;
+    color: #999;
+  }
+}
+
+.water-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.water-item {
+  background: #fff;
+  border-radius: $uni-radius-card;
+  padding: 16px;
+  display: flex;
+  
+  .water-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    background: #f5f5f5;
+    margin-right: 16px;
+  }
+  
+  .water-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    
+    .water-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .water-desc {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    .water-tags {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      
+      .tag {
+        font-size: 10px;
+        color: $uni-color-primary;
+        background: rgba(0, 160, 233, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    }
+    
+    .water-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      
+      .price-box {
+        .price-symbol { font-size: 12px; color: #FF4D4F; font-weight: bold; }
+        .price-num { font-size: 20px; color: #FF4D4F; font-weight: bold; }
+        .ticket-price { font-size: 11px; color: $uni-color-accent; margin-left: 4px; }
+      }
+      
+      .add-btn {
+        width: 28px;
+        height: 28px;
+        background: $uni-color-primary;
+        border-radius: 50%;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+      }
+    }
+  }
 }
 </style>

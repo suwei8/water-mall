@@ -1,6 +1,6 @@
 <template>
   <view class="container">
-    <!-- 左侧分类 -->
+    <!-- Left Sidebar -->
     <scroll-view scroll-y class="category-sidebar">
       <view 
         v-for="cat in categories" 
@@ -9,13 +9,14 @@
         :class="{ active: currentCategory === cat.id }"
         @click="selectCategory(cat.id)"
       >
-        {{ cat.name }}
+        <view class="active-line" v-if="currentCategory === cat.id"></view>
+        <text>{{ cat.name }}</text>
       </view>
     </scroll-view>
 
-    <!-- 右侧商品 -->
+    <!-- Right Product Content -->
     <scroll-view scroll-y class="product-area">
-      <view class="product-list">
+      <view class="product-list" v-if="products.length">
         <view 
           v-for="product in products" 
           :key="product.id" 
@@ -25,8 +26,14 @@
           <image class="product-image" :src="product.image" mode="aspectFill" />
           <view class="product-info">
             <text class="product-name">{{ product.name }}</text>
+            <view class="product-tags">
+               <text class="tag">支持水票</text>
+            </view>
             <view class="product-bottom">
-              <text class="product-price">¥{{ product.price }}</text>
+              <view class="price-box">
+                  <text class="currency">¥</text>
+                  <text class="price">{{ product.price }}</text>
+              </view>
               <view class="add-btn" @click.stop="quickAddCart(product)">
                 <text>+</text>
               </view>
@@ -35,8 +42,13 @@
         </view>
       </view>
 
-      <view class="empty" v-if="!loading && !products.length">
+      <view class="empty" v-else-if="!loading">
+        <image class="empty-img" src="/static/empty-water.png" mode="aspectFit" />
         <text>该分类暂无商品</text>
+      </view>
+      
+       <view class="loading" v-if="loading">
+        <text>加载中...</text>
       </view>
     </scroll-view>
   </view>
@@ -60,7 +72,6 @@ interface Product {
 }
 
 const cartStore = useCartStore();
-
 const loading = ref(true);
 const categories = ref<Category[]>([]);
 const products = ref<Product[]>([]);
@@ -118,57 +129,75 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .container {
   display: flex;
   height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #F7F8FA;
 }
 
+/* Sidebar */
 .category-sidebar {
-  width: 180rpx;
-  background-color: #f8f8f8;
+  width: 90px;
+  background-color: #fff;
   height: 100%;
 }
 
 .category-side-item {
-  padding: 30rpx 20rpx;
+  padding: 16px 10px;
   text-align: center;
-  font-size: 28rpx;
+  font-size: 14px;
   color: #666;
-  border-left: 6rpx solid transparent;
+  position: relative;
+  background-color: #f7f8fa;
+  
+  &.active {
+    background-color: #fff;
+    color: #333;
+    font-weight: bold;
+    
+    .active-line {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 16px;
+        background-color: $uni-color-primary;
+        border-radius: 0 4px 4px 0;
+    }
+  }
 }
 
-.category-side-item.active {
-  background-color: #fff;
-  color: #1890ff;
-  border-left-color: #1890ff;
-}
-
+/* Right Content */
 .product-area {
   flex: 1;
   height: 100%;
-  padding: 20rpx;
+  padding: 12px;
+  background-color: #fff;
 }
 
 .product-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 12px;
 }
 
 .product-item {
   display: flex;
-  background-color: #fff;
-  border-radius: 16rpx;
-  overflow: hidden;
-  padding: 20rpx;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+  
+  &:last-child {
+      border-bottom: none;
+  }
 }
 
 .product-image {
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 12rpx;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  background: #f5f5f5;
 }
 
 .product-info {
@@ -176,44 +205,61 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  margin-left: 20rpx;
+  margin-left: 12px;
+  
+  .product-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  
+  .product-tags {
+      .tag {
+          font-size: 10px;
+          color: $uni-color-primary;
+          border: 1px solid $uni-color-primary;
+          padding: 0 4px;
+          border-radius: 4px;
+      }
+  }
+  
+  .product-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    .price-box {
+        color: #FF4D4F;
+        font-weight: bold;
+        .currency { font-size: 12px; }
+        .price { font-size: 16px; }
+    }
+    
+    .add-btn {
+      width: 24px;
+      height: 24px;
+      background-color: $uni-color-primary;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+    }
+  }
 }
 
-.product-name {
-  font-size: 28rpx;
-  color: #333;
-}
-
-.product-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.product-price {
-  font-size: 32rpx;
-  color: #ff4d4f;
-  font-weight: bold;
-}
-
-.add-btn {
-  width: 50rpx;
-  height: 50rpx;
-  background-color: #1890ff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.add-btn text {
-  color: #fff;
-  font-size: 32rpx;
-}
-
-.empty {
+.empty, .loading {
   text-align: center;
-  padding: 100rpx;
+  padding: 60px 0;
   color: #999;
+  font-size: 14px;
+  
+  .empty-img {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 20px;
+  }
 }
 </style>
