@@ -70,7 +70,13 @@
 2. **Git规范**: 提交请遵循 Conventional Commits (feat, fix, chore, docs).
 3. **域名配置**: 小程序发布时需在微信后台配置 `request` 合法域名。
 
-## 6. 数据库说明
-本环境 (`miniapp` 开发环境) 未初始化本地后端数据库，因此无数据导出文件。
-- **Schema 定义**: 详见 `apps/backend/prisma/schema.prisma`。
-- **初始化**: 接手后请运行 `npx prisma migrate dev` 初始化数据库结构。
+## 6. ⚠️ 安全事件报告 (CRITICAL)
+**数据库遭遇勒索攻击**。
+- **现状**: 本地数据库 `water_mall` 已丢失，发现名为 `readme_to_recover` 的数据库。
+- **勒索信息**: 
+  > "All your data is backed up. You must pay 0.0051 BTC... Your DBCODE is: 3WR7C"
+- **建议**: 
+  1. 立即隔离服务器网络。
+  2. 检查是否有其他备份（如云快照）。
+  3. **不要支付赎金**，即使支付也无法保证找回数据。
+  4. 重新初始化数据库并加强安全防护（检查 PostgreSQL 端口暴露情况）。
