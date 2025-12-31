@@ -69,3 +69,8 @@
 1. **样式编译**: 如遇到样式报错，请检查 `apps/miniapp` 下是否安装了 `sass` (`npm install -D sass`).
 2. **Git规范**: 提交请遵循 Conventional Commits (feat, fix, chore, docs).
 3. **域名配置**: 小程序发布时需在微信后台配置 `request` 合法域名。
+
+## 6. 数据库说明
+本环境 (`miniapp` 开发环境) 未初始化本地后端数据库，因此无数据导出文件。
+- **Schema 定义**: 详见 `apps/backend/prisma/schema.prisma`。
+- **初始化**: 接手后请运行 `npx prisma migrate dev` 初始化数据库结构。
